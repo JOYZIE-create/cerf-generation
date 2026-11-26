@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -97,54 +97,44 @@
         };
 
         function generateCertificate() {
-            // 1. Рисуем оригинальную картинку
+            // 1. Рисуем оригинальную картинку целиком
             ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
             const wordText = document.getElementById('wordInput').value;
             const scoreText = document.getElementById('scoreInput').value;
 
-            // 2. ИДЕАЛЬНАЯ ЗАМАЗКА (без черных линий)
-            // Вычисляем точные координаты для затирки (основано на пропорциях твоего оригинала)
-            const startY = canvas.height * 0.28; // Начало блока текста
-            const endY = canvas.height * 0.40;   // Конец блока текста (перед картинкой)
+            // Масштабирование (на случай, если картинка не 720x1600)
+            const sX = canvas.width / 720;
+            const sY = canvas.height / 1600;
 
-            // Создаем плавный градиент, чтобы он сливался с фоном
-            const grad = ctx.createLinearGradient(0, startY, 0, endY);
-            // Берем цвет пикселя с левого края (где нет текста), чтобы попасть в тон
-            const colorTop = ctx.getImageData(10, startY, 1, 1).data;
-            const colorBottom = ctx.getImageData(10, endY, 1, 1).data;
-            
-            grad.addColorStop(0, `rgb(${colorTop[0]},${colorTop[1]},${colorTop[2]})`);
-            grad.addColorStop(1, `rgb(${colorBottom[0]},${colorBottom[1]},${colorBottom[2]})`);
-            
-            // Закрашиваем область
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, startY, canvas.width, endY - startY);
+            // 2. УМНАЯ ЗАМАЗКА (только под конкретными словами)
+            // Берем цвет пикселя с левой стороны картинки, где нет текста, чтобы идеально попасть в фон
+            function clearArea(x, y, w, h) {
+                const color = ctx.getImageData(50 * sX, y + (h * sY)/2, 1, 1).data;
+                ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                ctx.fillRect(x * sX, y * sY, w * sX, h * sY);
+            }
 
-            // 3. РИСОВАНИЕ ТЕКСТА
-            ctx.fillStyle = '#0A2647'; // Темно-синий цвет
+            // Замазываем ТОЛЬКО слово "прошла" (Координаты подобраны по пикселям)
+            clearArea(385, 460, 155, 50);
+
+            // Замазываем ТОЛЬКО число "53"
+            clearArea(375, 570, 55, 50);
+
+            // 3. РИСОВАНИЕ НОВОГО ТЕКСТА (ровно на месте старого)
+            ctx.fillStyle = '#0A2647'; // Темно-синий цвет оригинала
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            
-            // Размер шрифта подбираем под ширину картинки
-            const fontSize = canvas.width * 0.048; 
+
+            // Размер шрифта 38px идеально совпадает с оригиналом на разрешении 720px
+            const fontSize = 38 * sX;
             ctx.font = `700 ${fontSize}px "PT Sans", sans-serif`;
 
-            // Точные координаты по высоте (в пикселях для 1600px)
-            const y1 = canvas.height * 0.303; // "Поздравляем, ты ... первый"
-            const y2 = canvas.height * 0.334; // "тур!"
-            const y3 = canvas.height * 0.372; // "Твои баллы: ... из 70"
+            // Рисуем слово точно по центру замазанного места (X=462, Y=485)
+            ctx.fillText(wordText, 462 * sX, 485 * sY);
 
-            // Рисуем статус
-            let line1 = "Поздравляем, ты " + wordText + " первый";
-            ctx.fillText(line1, canvas.width / 2, y1);
-            
-            ctx.fillText("тур!", canvas.width / 2, y2);
-
-            // Рисуем баллы
-            ctx.font = `700 ${fontSize * 0.95}px "PT Sans", sans-serif`;
-            let line3 = "Твои баллы: " + scoreText + " из 70";
-            ctx.fillText(line3, canvas.width / 2, y3);
+            // Рисуем баллы точно по центру замазанного места (X=402, Y=595)
+            ctx.fillText(scoreText, 402 * sX, 595 * sY);
         }
 
         function downloadImage() {
