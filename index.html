@@ -103,37 +103,35 @@
             const wordText = document.getElementById('wordInput').value;
             const scoreText = document.getElementById('scoreInput').value;
 
-            // Масштабирование под разрешение картинки (чтобы работало на любом телефоне)
+            // Масштабирование (чтобы работало при любом размере картинки)
             const sX = canvas.width / 720;
             const sY = canvas.height / 1600;
 
-            // 2. ЗАМАЗКА (только в нужных местах)
-            // Берем цвет фона слева (где нет текста), чтобы идеально закрасить старое слово
-            function clearArea(x, y, w, h) {
-                const color = ctx.getImageData(20 * sX, (y + h/2) * sY, 1, 1).data;
-                ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-                ctx.fillRect(x * sX, y * sY, w * sX, h * sY);
-            }
+            // 2. ЗАМАЗКА (копируем чистый фон слева, чтобы не было видно швов)
+            
+            // Замазываем слово "прошла"
+            // Координаты: X=360, Y=525, Ширина=180, Высота=50
+            ctx.drawImage(bgImage, 50 * sX, 525 * sY, 180 * sX, 50 * sY, 360 * sX, 525 * sY, 180 * sX, 50 * sY);
 
-            // Замазываем слово "прошла" (Y = 535)
-            clearArea(380, 535, 125, 40);
-
-            // Замазываем число "53" (Y = 645)
-            clearArea(425, 645, 40, 40);
+            // Замазываем число "53"
+            // Координаты: X=410, Y=620, Ширина=60, Высота=45
+            ctx.drawImage(bgImage, 150 * sX, 620 * sY, 60 * sX, 45 * sY, 410 * sX, 620 * sY, 60 * sX, 45 * sY);
 
             // 3. РИСОВАНИЕ НОВОГО ТЕКСТА
-            ctx.fillStyle = '#0A2647'; // Темно-синий
+            
+            ctx.fillStyle = '#0A2647'; // Темно-синий цвет оригинала
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            const fontSize = 34 * sX; 
+            // Увеличенный размер шрифта (как в оригинале)
+            const fontSize = 36 * sX; 
             ctx.font = `700 ${fontSize}px "PT Sans", sans-serif`;
 
-            // Рисуем новое слово по центру (X=442, Y=555)
-            ctx.fillText(wordText, 442 * sX, 555 * sY);
+            // Рисуем слово (X=450, Y=550)
+            ctx.fillText(wordText, 450 * sX, 550 * sY);
 
-            // Рисуем новые баллы по центру (X=445, Y=665)
-            ctx.fillText(scoreText, 445 * sX, 665 * sY);
+            // Рисуем баллы (X=438, Y=642) - точно поверх замазанной "53"
+            ctx.fillText(scoreText, 438 * sX, 642 * sY);
         }
 
         function downloadImage() {
