@@ -88,39 +88,33 @@
         const ctx = canvas.getContext('2d');
         const bgImage = new Image();
         
+        // Если переименуешь картинку в bg.png, поменяй здесь название
         bgImage.src = 'IMG-20261126-WA0000.jpg'; 
 
         bgImage.onload = function() {
-            // Подстраиваем холст под реальный размер картинки
             canvas.width = bgImage.naturalWidth;
             canvas.height = bgImage.naturalHeight;
             generateCertificate();
         };
 
-        // Функция для переноса текста, если он слишком длинный
-        function wrapText(context, text, x, y, maxWidth, lineHeight) {
-            let words = text.split(' ');
-            let line = '';
-            let lines = [];
-            
-            for(let n = 0; n < words.length; n++) {
-                let testLine = line + words[n] + ' ';
-                let metrics = context.measureText(testLine);
-                let testWidth = metrics.width;
-                if (testWidth > maxWidth && n > 0) {
-                    lines.push(line);
-                    line = words[n] + ' ';
-                } else {
-                    line = testLine;
-                }
+        // Функция для получения цвета пикселя (чтобы замазка совпадала с градиентом)
+        function getPixelColor(x, y) {
+            const data = ctx.getImageData(x, y, 1, 1).data;
+            return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
+        }
+
+        // Функция для рисования текста с трекингом (расстоянием между буквами)
+        function drawSpacedText(text, x, y, spacing) {
+            let totalWidth = 0;
+            for (let i = 0; i < text.length; i++) {
+                totalWidth += ctx.measureText(text[i]).width + spacing;
             }
-            lines.push(line);
-
-            // Центрируем по вертикали, если строк несколько
-            let startY = y - ((lines.length - 1) * lineHeight) / 2;
-
-            for(let i = 0; i < lines.length; i++) {
-                context.fillText(lines[i].trim(), x, startY + (i * lineHeight));
+            totalWidth -= spacing; // Убираем лишний пробел в конце
+            
+            let currentX = x - (totalWidth / 2);
+            for (let i = 0; i < text.length; i++) {
+                ctx.fillText(text[i], currentX, y);
+                currentX += ctx.measureText(text[i]).width + spacing;
             }
         }
 
@@ -130,30 +124,60 @@
             const statusText = document.getElementById('statusInput').value;
             const scoreText = document.getElementById('scoreInput').value;
 
-            // Пропорции (в процентах от высоты), чтобы текст лег ровно
-            const yStatus = canvas.height * 0.297; 
-            const yScore = canvas.height * 0.335;
+            // --- 1. ИДЕАЛЬНАЯ ЗАМАЗКА СТАРОГО ТЕКСТА ---
+            // Координаты подобраны под твой оригинал
+            const statusYStart = canvas.height * 0.29;
+            const statusYEnd = canvas.height * 0.35;
+            const scoreYStart = canvas.height * 0.36;
+            const scoreYEnd = canvas.height * 0.40;
 
-            // --- 1. Умная замазка старого текста ---
-            // Берем кусок фона ВЫШЕ текста и накладываем поверх него
-            ctx.drawImage(bgImage, 0, yStatus - 80, canvas.width, 50, 0, yStatus - 25, canvas.width, 50);
-            ctx.drawImage(bgImage, 0, yScore - 80, canvas.width, 45, 0, yScore - 22, canvas.width, 45);
+            // Градиент для статуса
+            const gradStatus = ctx.createLinearGradient(0, statusYStart, 0, statusYEnd);
+            gradStatus.addColorStop(0, getPixelColor(10, statusYStart));
+            gradStatus.addColorStop(1, getPixelColor(10, statusYEnd));
+            ctx.fillStyle = gradStatus;
+            ctx.fillRect(0, statusYStart, canvas.width, statusYEnd - statusYStart);
 
-            // --- 2. Настройка текста ---
-            ctx.fillStyle = '#0A2647'; // Темно-синий цвет
+            // Градиент для баллов
+            const gradScore = ctx.createLinearGradient(0, scoreYStart, 0, scoreYEnd);
+            gradScore.addColorStop(0, getPixelColor(10, scoreYStart));
+            gradScore.addColorStop(1, getPixelColor(10, scoreYEnd));
+            ctx.fillStyle = gradScore;
+            ctx.fillRect(0, scoreYStart, canvas.width, scoreYEnd - scoreYStart);
+
+            // --- 2. РИСОВАНИЕ НОВОГО ТЕКСТА ---
+            ctx.fillStyle = '#0A2647'; // Темно-синий
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            // Размер шрифта зависит от ширины картинки
-            const fontSize = canvas.width * 0.045; 
+            const fontSize = canvas.width * 0.046; 
+            ctx.font = `700 ${fontSize}px "PT Sans", sans-serif`;
 
-            // Рисуем статус (жирный PT Sans)
-            ctx.font = '700 ' + fontSize + 'px "PT Sans", sans-serif';
-            wrapText(ctx, statusText, canvas.width / 2, yStatus, canvas.width * 0.85, fontSize * 1.2);
+            // Разбиваем текст статуса на две строки (как в оригинале)
+            // Ищем пробел, чтобы перенести "тур!" вниз, если текст длинный
+            let lines = [];
+            if (statusText.length > 28) {
+                let words = statusText.split(' ');
+                let mid = Math.ceil(words.length / 2);
+                lines.push(words.slice(0, mid).join(' '));
+                lines.push(words.slice(mid).join(' '));
+            } else {
+                lines.push(statusText);
+            }
 
-            // Рисуем баллы
-            ctx.font = '700 ' + (fontSize * 0.95) + 'px "PT Sans", sans-serif';
-            ctx.fillText(scoreText, canvas.width / 2, yScore);
+            // Рисуем статус с трекингом (0.5 пикселя между буквами)
+            const tracking = 0.5; 
+            const lineHeight = fontSize * 1.15;
+            const statusCenterY = canvas.height * 0.315;
+            let startY = statusCenterY - ((lines.length - 1) * lineHeight) / 2;
+
+            lines.forEach((line, index) => {
+                drawSpacedText(line, canvas.width / 2, startY + (index * lineHeight), tracking);
+            });
+
+            // Рисуем баллы с трекингом
+            ctx.font = `700 ${fontSize * 0.95}px "PT Sans", sans-serif`;
+            drawSpacedText(scoreText, canvas.width / 2, canvas.height * 0.38, tracking);
         }
 
         function downloadImage() {
