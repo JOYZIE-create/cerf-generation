@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Генератор сертификатов</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'PT Sans', sans-serif;
             background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
@@ -81,7 +81,7 @@
         <button onclick="downloadImage()" style="background-color: #28a745;">Скачать</button>
     </div>
 
-    <canvas id="canvas" width="720" height="1600"></canvas>
+    <canvas id="canvas"></canvas>
 
     <script>
         const canvas = document.getElementById('canvas');
@@ -91,8 +91,38 @@
         bgImage.src = 'IMG-20261126-WA0000.jpg'; 
 
         bgImage.onload = function() {
+            // Подстраиваем холст под реальный размер картинки
+            canvas.width = bgImage.naturalWidth;
+            canvas.height = bgImage.naturalHeight;
             generateCertificate();
         };
+
+        // Функция для переноса текста, если он слишком длинный
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            let words = text.split(' ');
+            let line = '';
+            let lines = [];
+            
+            for(let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = context.measureText(testLine);
+                let testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    lines.push(line);
+                    line = words[n] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+
+            // Центрируем по вертикали, если строк несколько
+            let startY = y - ((lines.length - 1) * lineHeight) / 2;
+
+            for(let i = 0; i < lines.length; i++) {
+                context.fillText(lines[i].trim(), x, startY + (i * lineHeight));
+            }
+        }
 
         function generateCertificate() {
             ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
@@ -100,23 +130,30 @@
             const statusText = document.getElementById('statusInput').value;
             const scoreText = document.getElementById('scoreInput').value;
 
-            const textColor = '#0A2647'; 
-            const bgColor = '#5bc0d9';   
+            // Пропорции (в процентах от высоты), чтобы текст лег ровно
+            const yStatus = canvas.height * 0.297; 
+            const yScore = canvas.height * 0.335;
 
-            ctx.fillStyle = bgColor;
+            // --- 1. Умная замазка старого текста ---
+            // Берем кусок фона ВЫШЕ текста и накладываем поверх него
+            ctx.drawImage(bgImage, 0, yStatus - 80, canvas.width, 50, 0, yStatus - 25, canvas.width, 50);
+            ctx.drawImage(bgImage, 0, yScore - 80, canvas.width, 45, 0, yScore - 22, canvas.width, 45);
 
-            ctx.fillRect(100, 500, 520, 50);
-            ctx.fillRect(200, 580, 320, 45);
-
-            ctx.fillStyle = textColor;
+            // --- 2. Настройка текста ---
+            ctx.fillStyle = '#0A2647'; // Темно-синий цвет
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            
+            // Размер шрифта зависит от ширины картинки
+            const fontSize = canvas.width * 0.045; 
 
-            ctx.font = 'bold 32px Roboto, sans-serif';
-            ctx.fillText(statusText, canvas.width / 2, 525);
+            // Рисуем статус (жирный PT Sans)
+            ctx.font = '700 ' + fontSize + 'px "PT Sans", sans-serif';
+            wrapText(ctx, statusText, canvas.width / 2, yStatus, canvas.width * 0.85, fontSize * 1.2);
 
-            ctx.font = 'bold 30px Roboto, sans-serif';
-            ctx.fillText(scoreText, canvas.width / 2, 605);
+            // Рисуем баллы
+            ctx.font = '700 ' + (fontSize * 0.95) + 'px "PT Sans", sans-serif';
+            ctx.fillText(scoreText, canvas.width / 2, yScore);
         }
 
         function downloadImage() {
