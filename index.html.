@@ -83,7 +83,7 @@
         const bgImage = new Image();
         
         // Укажи путь к своему скриншоту, загруженному в репозиторий
-        bgImage.src = 'bg.png'; 
+        bgImage.src = 'IMG-20261126-WA0000.jpg'; 
 
         bgImage.onload = function() {
             generateCertificate();
