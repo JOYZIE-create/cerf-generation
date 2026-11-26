@@ -54,9 +54,6 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
-        button:hover {
-            background-color: #0044cc;
-        }
         canvas {
             max-width: 100%;
             height: auto;
@@ -70,12 +67,12 @@
 
     <div class="controls">
         <div class="input-group">
-            <label>Текст статуса:</label>
-            <input type="text" id="statusInput" value="Поздравляем, ты прошел первый тур!">
+            <label>Слово (вместо "прошла"):</label>
+            <input type="text" id="wordInput" value="прошел">
         </div>
         <div class="input-group">
-            <label>Баллы:</label>
-            <input type="text" id="scoreInput" value="Твои баллы: 70 из 70">
+            <label>Баллы (вместо "53"):</label>
+            <input type="text" id="scoreInput" value="70">
         </div>
         <button onclick="generateCertificate()">Обновить</button>
         <button onclick="downloadImage()" style="background-color: #28a745;">Скачать</button>
@@ -91,57 +88,42 @@
         bgImage.src = 'IMG-20261126-WA0000.jpg'; 
 
         bgImage.onload = function() {
-            canvas.width = bgImage.naturalWidth;
-            canvas.height = bgImage.naturalHeight;
+            canvas.width = bgImage.width;
+            canvas.height = bgImage.height;
             generateCertificate();
         };
 
         function generateCertificate() {
             ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
-            const statusText = document.getElementById('statusInput').value;
+            const wordText = document.getElementById('wordInput').value;
             const scoreText = document.getElementById('scoreInput').value;
 
             // --- 1. ИДЕАЛЬНАЯ ЗАМАЗКА СТАРОГО ТЕКСТА ---
-            // Берем 1 пиксель ширины слева (где нет текста) и растягиваем на всю ширину
-            // Это сохраняет градиент, но убирает буквы. Координаты по Y подобраны точно.
-            
-            // Затираем блок статуса (от 480 до 560 пикселя)
-            ctx.drawImage(bgImage, 0, 480, 1, 80, 0, 480, canvas.width, 80);
-            
-            // Затираем блок баллов (от 570 до 620 пикселя)
-            ctx.drawImage(bgImage, 0, 570, 1, 50, 0, 570, canvas.width, 50);
+            // Берем 1 пиксель фона ровно по центру (где нет текста) и растягиваем на всю ширину
+            // Координаты Y подобраны точно под твой оригинал (от 470 до 630 пикселей)
+            ctx.drawImage(bgImage, canvas.width / 2, 450, 1, 190, 0, 450, canvas.width, 190);
 
             // --- 2. РИСОВАНИЕ НОВОГО ТЕКСТА ---
-            ctx.fillStyle = '#0c2a50'; // Точный темно-синий цвет
+            ctx.fillStyle = '#0c2a50'; // Темно-синий
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            const fontSize = canvas.width * 0.042; 
+            const fontSize = 36; 
             ctx.font = `700 ${fontSize}px "PT Sans", sans-serif`;
 
-            // Форматируем текст статуса в две строки, как в оригинале
-            let line1 = statusText;
-            let line2 = "";
-            
-            // Если текст длинный, переносим последнее слово на вторую строку
-            if (statusText.length > 25) {
-                let lastSpace = statusText.lastIndexOf(' ');
-                if (lastSpace !== -1) {
-                    line1 = statusText.substring(0, lastSpace);
-                    line2 = statusText.substring(lastSpace + 1);
-                }
-            }
+            // Собираем текст статуса
+            let line1 = "Поздравляем, ты " + wordText + " первый";
+            let line2 = "тур!";
 
-            // Рисуем статус (Y = 515 для первой строки, Y = 555 для второй)
+            // Рисуем статус (две строки)
             ctx.fillText(line1, canvas.width / 2, 515);
-            if (line2) {
-                ctx.fillText(line2, canvas.width / 2, 555);
-            }
+            ctx.fillText(line2, canvas.width / 2, 565);
 
-            // Рисуем баллы (Y = 595)
-            ctx.font = `700 ${fontSize * 0.95}px "PT Sans", sans-serif`;
-            ctx.fillText(scoreText, canvas.width / 2, 595);
+            // Собираем и рисуем баллы
+            let finalScoreText = "Твои баллы: " + scoreText + " из 70";
+            ctx.font = `700 ${fontSize - 2}px "PT Sans", sans-serif`;
+            ctx.fillText(finalScoreText, canvas.width / 2, 615);
         }
 
         function downloadImage() {
