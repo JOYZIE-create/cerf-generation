@@ -54,6 +54,9 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
+        button:hover {
+            background-color: #0044cc;
+        }
         canvas {
             max-width: 100%;
             height: auto;
@@ -88,8 +91,8 @@
         bgImage.src = 'IMG-20261126-WA0000.jpg'; 
 
         bgImage.onload = function() {
-            canvas.width = bgImage.width;
-            canvas.height = bgImage.height;
+            canvas.width = bgImage.naturalWidth;
+            canvas.height = bgImage.naturalHeight;
             generateCertificate();
         };
 
@@ -100,30 +103,45 @@
             const scoreText = document.getElementById('scoreInput').value;
 
             // --- 1. ИДЕАЛЬНАЯ ЗАМАЗКА СТАРОГО ТЕКСТА ---
-            // Берем 1 пиксель фона ровно по центру (где нет текста) и растягиваем на всю ширину
-            // Координаты Y подобраны точно под твой оригинал (от 470 до 630 пикселей)
-            ctx.drawImage(bgImage, canvas.width / 2, 450, 1, 190, 0, 450, canvas.width, 190);
+            // Координаты по высоте подобраны точно под оригинал
+            const startY = canvas.height * 0.32; // Начало области затирания
+            const endY = canvas.height * 0.47;   // Конец области затирания
+            
+            // Создаем градиент, чтобы он сливался с фоном (берем цвет с левого края, где нет текста)
+            const grad = ctx.createLinearGradient(0, startY, 0, endY);
+            const colorTop = ctx.getImageData(10, startY, 1, 1).data;
+            const colorBottom = ctx.getImageData(10, endY, 1, 1).data;
+            
+            grad.addColorStop(0, `rgb(${colorTop[0]},${colorTop[1]},${colorTop[2]})`);
+            grad.addColorStop(1, `rgb(${colorBottom[0]},${colorBottom[1]},${colorBottom[2]})`);
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, startY, canvas.width, endY - startY);
 
             // --- 2. РИСОВАНИЕ НОВОГО ТЕКСТА ---
-            ctx.fillStyle = '#0c2a50'; // Темно-синий
+            ctx.fillStyle = '#0c2a50'; // Темно-синий цвет оригинала
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            const fontSize = 36; 
+            const fontSize = canvas.width * 0.048; // Размер шрифта под ширину экрана
             ctx.font = `700 ${fontSize}px "PT Sans", sans-serif`;
 
-            // Собираем текст статуса
+            // Вычисляем позиции строк (опущены ровно на место старого текста)
+            let y1 = canvas.height * 0.35; 
+            let y2 = canvas.height * 0.39; 
+            let y3 = canvas.height * 0.445; 
+
+            // Первая строка: "Поздравляем, ты [слово] первый"
             let line1 = "Поздравляем, ты " + wordText + " первый";
-            let line2 = "тур!";
+            ctx.fillText(line1, canvas.width / 2, y1);
+            
+            // Вторая строка: "тур!"
+            ctx.fillText("тур!", canvas.width / 2, y2);
 
-            // Рисуем статус (две строки)
-            ctx.fillText(line1, canvas.width / 2, 515);
-            ctx.fillText(line2, canvas.width / 2, 565);
-
-            // Собираем и рисуем баллы
-            let finalScoreText = "Твои баллы: " + scoreText + " из 70";
-            ctx.font = `700 ${fontSize - 2}px "PT Sans", sans-serif`;
-            ctx.fillText(finalScoreText, canvas.width / 2, 615);
+            // Третья строка: "Твои баллы: [баллы] из 70"
+            ctx.font = `700 ${fontSize * 0.95}px "PT Sans", sans-serif`;
+            let line3 = "Твои баллы: " + scoreText + " из 70";
+            ctx.fillText(line3, canvas.width / 2, y3);
         }
 
         function downloadImage() {
