@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -88,7 +88,6 @@
         const ctx = canvas.getContext('2d');
         const bgImage = new Image();
         
-        // Убедись, что название файла совпадает с тем, что в репозитории
         bgImage.src = 'IMG-20261126-WA0000.jpg'; 
 
         bgImage.onload = function() {
@@ -98,40 +97,54 @@
         };
 
         function generateCertificate() {
+            // 1. Рисуем оригинальную картинку
             ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
             const wordText = document.getElementById('wordInput').value;
             const scoreText = document.getElementById('scoreInput').value;
 
-            // --- 1. ИДЕАЛЬНАЯ ЗАМАЗКА СТАРОГО ТЕКСТА ---
-            // Координаты области, где находится старый текст
-            const startY = Math.floor(canvas.height * 0.33); // Начало текста
-            const endY = Math.floor(canvas.height * 0.45);   // Конец текста
+            // 2. ИДЕАЛЬНАЯ ЗАМАЗКА (без черных линий)
+            // Вычисляем точные координаты для затирки (основано на пропорциях твоего оригинала)
+            const startY = canvas.height * 0.28; // Начало блока текста
+            const endY = canvas.height * 0.40;   // Конец блока текста (перед картинкой)
 
-            // Построчно копируем чистый фон с левой стороны (x=150, где нет кнопки "назад")
-            // и растягиваем его на всю ширину, чтобы скрыть старые буквы
-            for (let y = startY; y < endY; y++) {
-                ctx.drawImage(bgImage, 150, y, 1, 1, 0, y, canvas.width, 1);
-            }
+            // Создаем плавный градиент, чтобы он сливался с фоном
+            const grad = ctx.createLinearGradient(0, startY, 0, endY);
+            // Берем цвет пикселя с левого края (где нет текста), чтобы попасть в тон
+            const colorTop = ctx.getImageData(10, startY, 1, 1).data;
+            const colorBottom = ctx.getImageData(10, endY, 1, 1).data;
+            
+            grad.addColorStop(0, `rgb(${colorTop[0]},${colorTop[1]},${colorTop[2]})`);
+            grad.addColorStop(1, `rgb(${colorBottom[0]},${colorBottom[1]},${colorBottom[2]})`);
+            
+            // Закрашиваем область
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, startY, canvas.width, endY - startY);
 
-            // --- 2. РИСОВАНИЕ НОВОГО ТЕКСТА ---
-            ctx.fillStyle = '#0c2a50'; // Темно-синий цвет
+            // 3. РИСОВАНИЕ ТЕКСТА
+            ctx.fillStyle = '#0A2647'; // Темно-синий цвет
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            const fontSize = canvas.width * 0.045; // Чуть уменьшили размер
+            // Размер шрифта подбираем под ширину картинки
+            const fontSize = canvas.width * 0.048; 
             ctx.font = `700 ${fontSize}px "PT Sans", sans-serif`;
 
-            // Собираем и рисуем текст статуса
-            let line1 = "Поздравляем, ты " + wordText + " первый";
-            ctx.fillText(line1, canvas.width / 2, canvas.height * 0.36);
-            
-            ctx.fillText("тур!", canvas.width / 2, canvas.height * 0.40);
+            // Точные координаты по высоте (в пикселях для 1600px)
+            const y1 = canvas.height * 0.303; // "Поздравляем, ты ... первый"
+            const y2 = canvas.height * 0.334; // "тур!"
+            const y3 = canvas.height * 0.372; // "Твои баллы: ... из 70"
 
-            // Собираем и рисуем баллы
+            // Рисуем статус
+            let line1 = "Поздравляем, ты " + wordText + " первый";
+            ctx.fillText(line1, canvas.width / 2, y1);
+            
+            ctx.fillText("тур!", canvas.width / 2, y2);
+
+            // Рисуем баллы
             ctx.font = `700 ${fontSize * 0.95}px "PT Sans", sans-serif`;
             let line3 = "Твои баллы: " + scoreText + " из 70";
-            ctx.fillText(line3, canvas.width / 2, canvas.height * 0.45);
+            ctx.fillText(line3, canvas.width / 2, y3);
         }
 
         function downloadImage() {
