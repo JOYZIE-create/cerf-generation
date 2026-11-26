@@ -97,44 +97,43 @@
         };
 
         function generateCertificate() {
-            // 1. Рисуем оригинальную картинку целиком
+            // 1. Рисуем оригинальную картинку
             ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
             const wordText = document.getElementById('wordInput').value;
             const scoreText = document.getElementById('scoreInput').value;
 
-            // Масштабирование (на случай, если картинка не 720x1600)
+            // Масштабирование под разрешение картинки (чтобы работало на любом телефоне)
             const sX = canvas.width / 720;
             const sY = canvas.height / 1600;
 
-            // 2. УМНАЯ ЗАМАЗКА (только под конкретными словами)
-            // Берем цвет пикселя с левой стороны картинки, где нет текста, чтобы идеально попасть в фон
+            // 2. ЗАМАЗКА (только в нужных местах)
+            // Берем цвет фона слева (где нет текста), чтобы идеально закрасить старое слово
             function clearArea(x, y, w, h) {
-                const color = ctx.getImageData(50 * sX, y + (h * sY)/2, 1, 1).data;
+                const color = ctx.getImageData(20 * sX, (y + h/2) * sY, 1, 1).data;
                 ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
                 ctx.fillRect(x * sX, y * sY, w * sX, h * sY);
             }
 
-            // Замазываем ТОЛЬКО слово "прошла" (Координаты подобраны по пикселям)
-            clearArea(385, 460, 155, 50);
+            // Замазываем слово "прошла" (Y = 535)
+            clearArea(380, 535, 125, 40);
 
-            // Замазываем ТОЛЬКО число "53"
-            clearArea(375, 570, 55, 50);
+            // Замазываем число "53" (Y = 645)
+            clearArea(425, 645, 40, 40);
 
-            // 3. РИСОВАНИЕ НОВОГО ТЕКСТА (ровно на месте старого)
-            ctx.fillStyle = '#0A2647'; // Темно-синий цвет оригинала
+            // 3. РИСОВАНИЕ НОВОГО ТЕКСТА
+            ctx.fillStyle = '#0A2647'; // Темно-синий
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Размер шрифта 38px идеально совпадает с оригиналом на разрешении 720px
-            const fontSize = 38 * sX;
+            const fontSize = 34 * sX; 
             ctx.font = `700 ${fontSize}px "PT Sans", sans-serif`;
 
-            // Рисуем слово точно по центру замазанного места (X=462, Y=485)
-            ctx.fillText(wordText, 462 * sX, 485 * sY);
+            // Рисуем новое слово по центру (X=442, Y=555)
+            ctx.fillText(wordText, 442 * sX, 555 * sY);
 
-            // Рисуем баллы точно по центру замазанного места (X=402, Y=595)
-            ctx.fillText(scoreText, 402 * sX, 595 * sY);
+            // Рисуем новые баллы по центру (X=445, Y=665)
+            ctx.fillText(scoreText, 445 * sX, 665 * sY);
         }
 
         function downloadImage() {
