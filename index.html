@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор сертификатов</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0055ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0044cc;
+        }
+        canvas {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <div class="input-group">
+            <label>Текст статуса:</label>
+            <input type="text" id="statusInput" value="Поздравляем, ты прошел первый тур!">
+        </div>
+        <div class="input-group">
+            <label>Баллы:</label>
+            <input type="text" id="scoreInput" value="Твои баллы: 70 из 70">
+        </div>
+        <button onclick="generateCertificate()">Обновить</button>
+        <button onclick="downloadImage()" style="background-color: #28a745; margin-top: 10px;">Скачать</button>
+    </div>
+
+    <canvas id="canvas" width="720" height="1600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const bgImage = new Image();
+        
+        // Укажи путь к своему скриншоту, загруженному в репозиторий
+        bgImage.src = 'IMG-20261126-WA0000.jpg'; 
+
+        bgImage.onload = function() {
+            generateCertificate();
+        };
+
+        function generateCertificate() {
+            // 1. Отрисовка фона
+            ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+            const statusText = document.getElementById('statusInput').value;
+            const scoreText = document.getElementById('scoreInput').value;
+
+            // 2. Настройка шрифтов и цветов
+            // Цвет взят из оригинального текста Uchi.ru
+            const textColor = '#0A2647'; 
+            
+            // 3. Затирание старого текста (имитация градиента)
+            // Координаты (X, Y, Ширина, Высота) подобраны под твой скриншот
+            // Вместо сплошной заливки берем пиксель фона и заливаем им
+            const bgColor = ctx.getImageData(350, 480, 1, 1).data;
+            ctx.fillStyle = `rgba(${bgColor[0]}, ${bgColor[1]}, ${bgColor[2]}, 1)`;
+            
+            // Затираем статус
+            ctx.fillRect(100, 440, 520, 50);
+            // Затираем баллы
+            ctx.fillRect(200, 530, 320, 50);
+
+            // 4. Рендер нового текста
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+
+            // Статус
+            ctx.font = 'bold 32px Roboto, sans-serif';
+            ctx.fillText(statusText, canvas.width / 2, 475);
+
+            // Баллы
+            ctx.font = 'bold 28px Roboto, sans-serif';
+            ctx.fillText(scoreText, canvas.width / 2, 565);
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'certificate.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
